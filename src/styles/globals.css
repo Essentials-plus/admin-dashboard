@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply scrollbar-none;
+  }
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+
+  kbd {
+    @apply border border-border rounded-sm text-[10px] px-1.5 py-0.5;
+  }
+}
+
+.__fv {
+  @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring;
+}
+
+.toaster li {
+  @apply !rounded-md;
+}
+.toaster li div[data-icon] {
+  @apply size-7 flex justify-center items-center rounded-sm;
+}
+.toaster li[data-type='error'] div[data-icon] {
+  @apply bg-red-500/25 text-red-500;
+}
+.toaster li[data-type='info'] div[data-icon] {
+  @apply bg-blue-500/25 text-blue-500;
+}
+.toaster li[data-type='success'] div[data-icon] {
+  @apply bg-green-500/25 text-green-500;
+}
+.toaster li[data-type='warning'] div[data-icon] {
+  @apply bg-yellow-500/25 text-yellow-500;
+}
+.toaster li[data-type='loading'] div[data-icon] {
+  @apply bg-muted;
+}

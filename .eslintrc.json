@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "plugin:tailwindcss/recommended",
+    "next/core-web-vitals",
+    "plugin:@tanstack/eslint-plugin-query/recommended"
+  ],
+  "rules": {
+    "no-unused-vars": "warn"
+  }
+}
