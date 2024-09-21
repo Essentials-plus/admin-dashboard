@@ -15,7 +15,7 @@ export default function RichTextEditor({
     <Editor
       key={resolvedTheme}
       {...editor}
-      apiKey="zrr09ljmv9jnole64omsrqely889fbdkfl2ma89u2jde6z6t"
+      apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
       init={{
         plugins:
           'preview importcss searchreplace autolink autosave save directionality code visualblocks visualchars fullscreen image link media codesample table charmap pagebreak nonbreaking anchor insertdatetime advlist lists wordcount help charmap quickbars emoticons accordion',

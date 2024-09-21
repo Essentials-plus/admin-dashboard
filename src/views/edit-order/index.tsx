@@ -262,7 +262,7 @@ export default function EditOrder() {
                   </DropdownMenu>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 text-sm">
+              <CardContent className="p-6 text-sm lg:pt-4">
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">Order Details</h1>
