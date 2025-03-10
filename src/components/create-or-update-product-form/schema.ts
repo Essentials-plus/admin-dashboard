@@ -37,7 +37,7 @@ export const createProductBaseSchema = z.object({
     required_error: 'Required',
     invalid_type_error: 'Required',
   }),
-  categoryId: z.string().optional().nullable(),
+  categoryIds: z.array(z.string().uuid()),
 });
 
 export const createSimpleProductSchema = z
@@ -115,6 +115,7 @@ export const updateProductVariationSchema = z
       .positive()
       .or(z.literal('')),
     image: z.string().url().optional().or(z.literal('')),
+    imageSameAsVariationId: z.string().uuid().optional().or(z.literal('')),
   })
   .refine(
     (data) => {

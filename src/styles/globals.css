@@ -43,3 +43,10 @@
 .toaster li[data-type='loading'] div[data-icon] {
   @apply bg-muted;
 }
+
+@media print {
+  .print_pagebreak {
+    clear: both;
+    page-break-after: always;
+  }
+}

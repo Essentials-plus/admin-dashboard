@@ -9,13 +9,14 @@ import { AppPropsWithLayout } from '@/types/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Check, Info, OctagonAlert, TriangleAlert } from 'lucide-react';
+import { NuqsAdapter } from 'nuqs/adapters/next/pages';
 import { toast } from 'sonner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 1000 * 5, // 5 seconds
+      staleTime: 1000 * 60, // 60 seconds
     },
     mutations: {
       onError(error) {
@@ -35,34 +36,36 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
   return (
     <>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <ReactQueryDevtools initialIsOpen={false} />
+        <NuqsAdapter>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ReactQueryDevtools initialIsOpen={false} />
 
-          <AuthWrapper>{getLayout(<Component {...pageProps} />)}</AuthWrapper>
-          <Toaster
-            visibleToasts={5}
-            toastOptions={{
-              classNames: {
-                description: 'text-xs opacity-80',
-                closeButton:
-                  'static shrink-0 order-3 ml-auto translate-y-0 rounded-sm bg-muted hover:!bg-muted border-none hover:ring-1 ring-muted-foreground/50 duration-100',
-              },
-            }}
-            closeButton
-            icons={{
-              error: <OctagonAlert className="size-4" />,
-              info: <Info className="size-4" />,
-              warning: <TriangleAlert className="size-4" />,
-              success: <Check className="size-4" />,
-              loading: <Spinner className="size-4" />,
-            }}
-          />
-        </ThemeProvider>
+            <AuthWrapper>{getLayout(<Component {...pageProps} />)}</AuthWrapper>
+            <Toaster
+              visibleToasts={5}
+              toastOptions={{
+                classNames: {
+                  description: 'text-xs opacity-80',
+                  closeButton:
+                    'static shrink-0 order-3 ml-auto translate-y-0 rounded-sm bg-muted hover:!bg-muted border-none hover:ring-1 ring-muted-foreground/50 duration-100',
+                },
+              }}
+              closeButton
+              icons={{
+                error: <OctagonAlert className="size-4" />,
+                info: <Info className="size-4" />,
+                warning: <TriangleAlert className="size-4" />,
+                success: <Check className="size-4" />,
+                loading: <Spinner className="size-4" />,
+              }}
+            />
+          </ThemeProvider>
+        </NuqsAdapter>
       </QueryClientProvider>
     </>
   );

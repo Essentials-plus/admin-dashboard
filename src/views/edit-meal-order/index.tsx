@@ -48,7 +48,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Formik } from 'formik';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { useMemo, useRef } from 'react';
+import { Fragment, useMemo, useRef } from 'react';
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'sonner';
@@ -358,55 +358,32 @@ export default function EditMealOrder() {
                       ))}
                     </Tabs>
 
-                    <div className="mt-4 hidden space-y-5 print:block">
+                    <div className="mt-4 hidden break-after-page space-y-5 print:block">
                       {order?.mealsForTheWeek.map((day) => (
-                        <div
-                          key={day.day}
-                          className="mt-0 rounded-md bg-muted p-4 data-[state=active]:mt-3"
-                        >
-                          <div className="mb-2.5 text-lg font-semibold">
-                            Day {day.day}
-                          </div>
-                          <ResponsiveMasonry
-                            columnsCountBreakPoints={{
-                              350: 1,
-                              900: 2,
-                              1100: 3,
-                            }}
-                          >
-                            <Masonry gutter="16px">
+                        <Fragment key={day.day}>
+                          <div className="mt-0 rounded-md bg-muted p-4 data-[state=active]:mt-3">
+                            <div className="mb-2.5 text-lg font-semibold">
+                              Day {day.day}
+                            </div>
+
+                            <div className="space-y-1.5">
                               {sortMealsByMealType(day.meals).map((meal, i) => (
                                 <Card
                                   key={day.day + '__' + meal.id}
                                   className="relative isolate"
                                 >
-                                  <span className="pointer-events-none absolute right-3 top-2 z-[-] text-7xl font-bold opacity-15">
-                                    {i + 1}
-                                  </span>
-                                  <CardHeader className="flex flex-row gap-3 p-2">
-                                    <div className="flex size-[100px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-                                      {meal.image && meal.mealName ? (
-                                        <Image
-                                          src={meal.image}
-                                          alt={meal.mealName}
-                                          width={200}
-                                          height={200}
-                                          className="size-full object-cover"
-                                        />
-                                      ) : (
-                                        meal.meal || 'No Image'
-                                      )}
-                                    </div>
-                                    <div className="space-y-1 [&>p>span]:font-medium [&>p>span]:text-foreground [&>p]:text-muted-foreground">
-                                      <CardTitle className="!mb-2">
-                                        {meal.mealName}
+                                  <CardHeader className="flex flex-row gap-3 !p-3.5 !pb-1">
+                                    <div className="flex w-full items-center gap-2 [&>p>span]:font-medium [&>p>span]:text-foreground [&>p]:text-muted-foreground">
+                                      <CardTitle>
+                                        <span>{i + 1}.</span> {meal.mealName}
                                       </CardTitle>
-                                      <p>
+                                      <p className="ml-auto">
                                         Meal no:{' '}
                                         <span>
                                           {meal.mealNumber || '- - -'}
                                         </span>
                                       </p>
+                                      <div className="h-4 w-px bg-muted-foreground"></div>
                                       <p>
                                         Type:{' '}
                                         <span>
@@ -423,12 +400,13 @@ export default function EditMealOrder() {
                                       </p>
                                     </div>
                                   </CardHeader>
-                                  <CardContent className="p-2 pt-0">
-                                    <div className="rounded-md bg-muted p-3 pt-2.5">
-                                      <p className="text-base font-medium">
+                                  <div className="my-1.5 h-px w-full bg-muted"></div>
+                                  <CardContent className="!p-3.5 !pt-0">
+                                    <div>
+                                      <p className="text-sm font-medium">
                                         Ingredients
                                       </p>
-                                      <ul className="mt-2 space-y-1 text-foreground">
+                                      <ul className="mt-2 flex flex-wrap items-center gap-2 text-foreground">
                                         {meal.ingredients.map((ingredient) => {
                                           const sumOfKCal = sumOf(
                                             meal.ingredients,
@@ -443,7 +421,7 @@ export default function EditMealOrder() {
                                           return (
                                             <li
                                               key={ingredient.id}
-                                              className="list-item list-inside list-disc marker:text-muted-foreground"
+                                              className="rounded-md bg-muted px-2.5 py-1"
                                             >
                                               {typeof ingredient.quantity ===
                                               'number'
@@ -460,9 +438,10 @@ export default function EditMealOrder() {
                                   </CardContent>
                                 </Card>
                               ))}
-                            </Masonry>
-                          </ResponsiveMasonry>
-                        </div>
+                            </div>
+                          </div>
+                          <div className="print_pagebreak" />
+                        </Fragment>
                       ))}
                     </div>
                   </div>

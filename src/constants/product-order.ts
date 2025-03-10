@@ -12,8 +12,8 @@ export const productOrderStatusOptions: {
     label: 'Completed',
     value: 'completed',
   },
-  // {
-  //   label: 'Unpaid',
-  //   value: 'unpaid',
-  // },
+  {
+    label: 'Unpaid',
+    value: 'unpaid',
+  },
 ];

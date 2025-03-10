@@ -21,6 +21,7 @@ import {
   CreateOrUpdateMealFormProps,
   createMealSchema,
 } from '@/components/create-or-update-meal-form/schema';
+import FloatingFormActionsBar from '@/components/floating-form-actions-bar';
 import SearchIngredientsPopover from '@/components/search-ingredients-popover';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -184,6 +185,15 @@ export default function CreateOrUpdateMealForm({
       {({ values, setFieldValue, submitForm, isSubmitting, dirty }) => (
         <div className="grid flex-1 items-start gap-4 sm:py-0 md:gap-8">
           <BeforeUnloadComponent enabled={dirty} />
+          <FloatingFormActionsBar
+            wrapper={{
+              className: 'max-lg:hidden',
+            }}
+            saveButton={{
+              loading: isSubmitting,
+            }}
+            discardButton={{ disabled: isSubmitting }}
+          />
           <div className="grid flex-1 gap-4">
             <div className="flex items-center gap-4">
               {!hideGoBackButton && (
@@ -569,6 +579,9 @@ export default function CreateOrUpdateMealForm({
                       <input
                         type="file"
                         className="sr-only"
+                        onClick={(e) => {
+                          (e.target as HTMLInputElement).value = '';
+                        }}
                         onChange={(e) => {
                           const files = e.target.files;
                           if (files) {

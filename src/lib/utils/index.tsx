@@ -1,6 +1,5 @@
 import envs from '@/config/envs';
 import { mealTypeOptions } from '@/constants/meal';
-import { Order } from '@/types/api-responses/order';
 import { ProductTaxPercentType } from '@/types/api-responses/product';
 import { clsx, type ClassValue } from 'clsx';
 import { format } from 'date-fns';
@@ -71,11 +70,12 @@ export const getApiErrorMessage = (
       );
     } else {
       try {
-        errorMessage = error.response.data.message;
+        const data = error.response?.data;
+        errorMessage = typeof data === 'string' ? data : data?.message;
       } catch (error) {}
     }
 
-    return errorMessage;
+    return errorMessage || defaultErrorMessage;
   } catch (error) {}
 };
 
@@ -111,23 +111,23 @@ export const appDefaultDateFormatter = (date: Date) => {
   return format(date, "eeee, dd-MM-yyyy 'at' hh:mm a");
 };
 
-export const getProductPrice = (
-  product: Order['products'][number]['product'],
-  variationId: string | null
-) => {
-  if (variationId) {
-    const variation = product.variations.find(
-      (variation) => variation.id === variationId
-    );
-    return typeof variation?.salePrice === 'number'
-      ? variation?.salePrice
-      : variation?.regularPrice;
-  } else {
-    return typeof product.salePrice === 'number'
-      ? product.salePrice
-      : product.regularPrice;
-  }
-};
+// export const getProductPrice = (
+//   product: Order['products'][number]['product'],
+//   variationId: string | null
+// ) => {
+//   if (variationId) {
+//     const variation = product.variations.find(
+//       (variation) => variation.id === variationId
+//     );
+//     return typeof variation?.salePrice === 'number'
+//       ? variation?.salePrice
+//       : variation?.regularPrice;
+//   } else {
+//     return typeof product.salePrice === 'number'
+//       ? product.salePrice
+//       : product.regularPrice;
+//   }
+// };
 
 export const sumOf = <T, K extends keyof T>(array: T[], key: K) => {
   return array.reduce((previousValue, currentItem) => {

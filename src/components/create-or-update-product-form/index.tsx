@@ -1,10 +1,12 @@
 import {
   getCheckProductSlugAvailabilityMutationOptions,
   getCreateProductMutationOptions,
+  getCreateProductVariationMutationOptions,
   getCreateProductVariationsMutationOptions,
   getDeleteProductVariationMutationOptions,
   getToggleLinkedProductMutationOptions,
-  getToggleProductShowOnHomePageBannerMutationOptions,
+  getToggleProductShowOnBestSellerSectionMutationOptions,
+  getToggleProductShowOnCartRecommendationSectionMutationOptions,
   getUpdateProductMutationOptions,
   getUpdateProductVariationMutationOptions,
   getUploadFileMutationOptions,
@@ -14,7 +16,7 @@ import {
   getProductAttributeTermsQueryOptions,
   getProductAttributesQueryOptions,
   getProductByIdQueryOptions,
-  getProductCategoriesQueryOptions,
+  getProductCategoriesRecursivelyQueryOptions,
 } from '@/api-clients/admin-api-client/queries';
 import ApiStatusIndicator from '@/components/api-status-indicator';
 import { confirm } from '@/components/confirm';
@@ -39,7 +41,14 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import Circle from '@/components/ui/circle';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { FormikInput, Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -53,7 +62,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import Spinner from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
-import { FormikTextarea, Textarea } from '@/components/ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Tooltip,
@@ -83,7 +92,27 @@ import {
   ProductAttributeTerm,
   ProductVariation,
 } from '@/types/api-responses/product-attribute';
+import { ProductCategory } from '@/types/api-responses/product-category';
 import { Optionalize } from '@/types/utils';
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useHotkeys, useOs } from '@mantine/hooks';
 import { AccordionTrigger } from '@radix-ui/react-accordion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -91,6 +120,7 @@ import { ErrorMessage, Formik, useFormikContext } from 'formik';
 import {
   ChevronDownIcon,
   ChevronLeft,
+  GripVertical,
   OctagonAlert,
   RefreshCcw,
   Trash2,
@@ -129,18 +159,11 @@ const CreateOrUpdateProductForm = ({
     retry: false,
   });
 
-  const productCategoriesQuery = useQuery({
-    ...getProductCategoriesQueryOptions(),
+  const productCategoriesRecursivelyQuery = useQuery({
+    ...getProductCategoriesRecursivelyQueryOptions(),
   });
 
-  const categoryOptions = useMemo(
-    () =>
-      (productCategoriesQuery.data?.data || []).map((category) => ({
-        label: category.name,
-        value: category.id,
-      })),
-    [productCategoriesQuery.data?.data]
-  );
+  const categoryOptions = productCategoriesRecursivelyQuery.data?.data || [];
 
   useEffect(() => {
     if (productQuery.isError) {
@@ -168,6 +191,7 @@ const CreateOrUpdateProductForm = ({
         description: productData.description || '',
         longDescription: productData.longDescription || '',
         attributeTermIds: productData.attributeTerms?.map((term) => term.id),
+        categoryIds: productData.categories.map((category) => category.id),
         taxPercent: productData.taxPercent as ProductTaxPercentEnum,
       }
     : {
@@ -184,7 +208,7 @@ const CreateOrUpdateProductForm = ({
         stock: '',
         lowStockThreshold: '',
         type: '',
-        categoryId: '',
+        categoryIds: [],
         longDescription: '',
         taxPercent: '',
       };
@@ -213,13 +237,13 @@ const CreateOrUpdateProductForm = ({
       // onApiError && onApiError();
     },
   });
-  const toggleProductShowOnHomePageBannerMutation = useMutation({
-    ...getToggleProductShowOnHomePageBannerMutationOptions(),
+  const toggleProductShowOnBestSellerSectionMutation = useMutation({
+    ...getToggleProductShowOnBestSellerSectionMutationOptions(),
     onSuccess() {
       toast.success(
-        productData?.showOnHomePageBanner
-          ? 'Product has removed from the home page banner'
-          : 'Product has added to the home page banner'
+        productData?.showOnBestSellerSection
+          ? 'The product has been removed from the best seller section'
+          : 'The product has been added to the best seller section'
       );
       queryClient.setQueryData(
         productQueryFn.queryKey,
@@ -230,7 +254,35 @@ const CreateOrUpdateProductForm = ({
             ...product,
             data: {
               ...product.data,
-              showOnHomePageBanner: !productData?.showOnHomePageBanner,
+              showOnBestSellerSection: !productData?.showOnBestSellerSection,
+            },
+          };
+        }
+      );
+    },
+    onError(error) {
+      toast.error(getApiErrorMessage(error, 'Failed to update product'));
+    },
+  });
+  const toggleProductShowOnCartRecommendationSectionMutation = useMutation({
+    ...getToggleProductShowOnCartRecommendationSectionMutationOptions(),
+    onSuccess() {
+      toast.success(
+        productData?.showOnCartRecommendationSection
+          ? 'The product has been removed from the cart recommendation section'
+          : 'The product has been added to the cart recommendation section'
+      );
+      queryClient.setQueryData(
+        productQueryFn.queryKey,
+        (
+          product: ApiResponseSuccessBase<Product>
+        ): ApiResponseSuccessBase<Product> => {
+          return {
+            ...product,
+            data: {
+              ...product.data,
+              showOnCartRecommendationSection:
+                !productData?.showOnCartRecommendationSection,
             },
           };
         }
@@ -371,7 +423,7 @@ const CreateOrUpdateProductForm = ({
     >
       {({ submitForm, isSubmitting, values, dirty, setFieldValue }) => (
         <div className="grid flex-1 items-start gap-4 sm:py-0 md:gap-8">
-          <FormHotKeys />
+          {dirty && <FormHotKeys />}
           <FloatingFormActionsBar
             wrapper={{
               className: 'max-lg:hidden',
@@ -469,10 +521,26 @@ const CreateOrUpdateProductForm = ({
                           placeholder="Select tax percent"
                         />
                       </div>
-                      <FormikTextarea
+                      {/* <FormikTextarea
                         rows={6}
                         name="description"
                         label="Description"
+                      /> */}
+
+                      <Label
+                        htmlFor="description"
+                        className="mb-3 inline-block"
+                      >
+                        Description
+                      </Label>
+                      <RichTextEditor
+                        editor={{
+                          id: 'description',
+                          value: values['description'],
+                          onEditorChange: (value) => {
+                            setFieldValue('description', value);
+                          },
+                        }}
                       />
 
                       {values.type === ProductTypeEnum.simple && (
@@ -846,13 +914,21 @@ const CreateOrUpdateProductForm = ({
                     <CardTitle>Product Category</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <FormikSelect
+                    {/* <FormikSelect
                       name="categoryId"
                       options={categoryOptions}
                       placeholder="Select category"
-                    />
+                    /> */}
+                    <div className="max-h-[300px] space-y-2 overflow-y-auto">
+                      {categoryOptions.map((category) => (
+                        <CategoryCheckbox
+                          key={category.id}
+                          category={category}
+                        />
+                      ))}
+                    </div>
 
-                    {productData?.categoryId && values.categoryId && (
+                    {/* {productData?.categoryId && values.categoryId && (
                       <Button
                         variant={'destructive'}
                         size={'sm'}
@@ -863,7 +939,7 @@ const CreateOrUpdateProductForm = ({
                       >
                         Remove
                       </Button>
-                    )}
+                    )} */}
                   </CardContent>
                 </Card>
 
@@ -871,20 +947,41 @@ const CreateOrUpdateProductForm = ({
                   <>
                     <Card>
                       <CardHeader>
-                        <CardTitle>Home page banner</CardTitle>
+                        <CardTitle>Toggle product visibility</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <Label className="flex cursor-pointer items-center justify-between">
-                          <span>Show on home page banner</span>
+                          <span>Show on best seller section</span>
                           <Switch
                             loading={
-                              toggleProductShowOnHomePageBannerMutation.isPending
+                              toggleProductShowOnBestSellerSectionMutation.isPending
                             }
-                            checked={productData?.showOnHomePageBanner}
+                            checked={productData?.showOnBestSellerSection}
                             onCheckedChange={() => {
-                              toggleProductShowOnHomePageBannerMutation.mutate({
-                                id: productData?.id!,
-                              });
+                              toggleProductShowOnBestSellerSectionMutation.mutate(
+                                {
+                                  id: productData?.id!,
+                                }
+                              );
+                            }}
+                          />
+                        </Label>
+                        <Separator className="my-2.5 w-full" />
+                        <Label className="flex cursor-pointer items-center justify-between">
+                          <span>Show on cart recommendation section</span>
+                          <Switch
+                            loading={
+                              toggleProductShowOnCartRecommendationSectionMutation.isPending
+                            }
+                            checked={
+                              productData?.showOnCartRecommendationSection
+                            }
+                            onCheckedChange={() => {
+                              toggleProductShowOnCartRecommendationSectionMutation.mutate(
+                                {
+                                  id: productData?.id!,
+                                }
+                              );
                             }}
                           />
                         </Label>
@@ -1003,6 +1100,44 @@ const CreateOrUpdateProductForm = ({
   );
 };
 
+const CategoryCheckbox = ({ category }: { category: ProductCategory }) => {
+  const { setFieldValue, values } = useFormikContext<
+    SimpleProductSchema & VariableProductSchema
+  >();
+
+  return (
+    <>
+      <Label className="flex w-full cursor-pointer items-center gap-2 py-0.5 text-muted-foreground hover:text-foreground">
+        <Checkbox
+          checked={values['categoryIds'].includes(category.id)}
+          onCheckedChange={(value) => {
+            if (value === true) {
+              setFieldValue('categoryIds', [
+                ...values.categoryIds,
+                category.id,
+              ]);
+            } else if (value === false) {
+              setFieldValue(
+                'categoryIds',
+                (values.categoryIds || []).filter((id) => id !== category.id)
+              );
+            }
+          }}
+        />
+        {category.name}
+      </Label>
+
+      {category.subCategories.length > 0 && (
+        <div className="space-y-2 pl-3">
+          {category.subCategories.map((subCategory) => (
+            <CategoryCheckbox key={subCategory.id} category={subCategory} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
 export default CreateOrUpdateProductForm;
 
 const FormHotKeys = () => {
@@ -1036,6 +1171,30 @@ const ProductAttributesAndTerms = () => {
     [productAttributes, values.attributes]
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const getItemIndex = (id: string | number | undefined) =>
+    values.attributes?.findIndex((attribute) => attribute.id === id);
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+
+    if (active.id === over?.id) return;
+
+    const originalPos = getItemIndex(active.id) as any;
+    const newPos = getItemIndex(over?.id) as any;
+
+    const newData = arrayMove(values.attributes, originalPos, newPos);
+    setFieldValue('attributes', newData);
+  };
+
+  const attributes = values.attributes;
   return (
     <Card>
       <CardHeader className="flex-row justify-between space-y-0">
@@ -1076,7 +1235,7 @@ const ProductAttributesAndTerms = () => {
                   (attribute) => attribute.id === selectedAttributeId
                 );
                 setFieldValue('attributes', [...values.attributes, attribute]);
-                toast.success(`Attribute "${attribute?.name}" added`);
+                toast.info(`Attribute "${attribute?.name}" added`);
                 setSelectedAttributeId('');
               }
             }}
@@ -1089,17 +1248,32 @@ const ProductAttributesAndTerms = () => {
       </CardHeader>
 
       <CardContent>
-        <Accordion type="single" collapsible className="space-y-4">
-          {values.attributes.length > 0 ? (
-            values.attributes.map((attribute) => (
-              <AttributeAccordion key={attribute.id} attribute={attribute} />
-            ))
-          ) : (
-            <div className="py-5 text-center text-sm text-muted-foreground">
-              <p>No attributes added.</p>
-            </div>
-          )}
-        </Accordion>
+        <DndContext
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={attributes}
+            strategy={verticalListSortingStrategy}
+          >
+            <Accordion type="single" collapsible className="space-y-4">
+              {attributes.length > 0 ? (
+                attributes.map((attribute) => (
+                  <AttributeAccordion
+                    key={attribute.id}
+                    attribute={attribute}
+                  />
+                ))
+              ) : (
+                <div className="py-5 text-center text-sm text-muted-foreground">
+                  <p>No attributes added.</p>
+                </div>
+              )}
+            </Accordion>
+          </SortableContext>
+        </DndContext>
       </CardContent>
     </Card>
   );
@@ -1166,8 +1340,21 @@ const AttributeAccordion = ({
     }
   };
 
+  const {
+    attributes,
+    listeners,
+    // transition,
+    setNodeRef,
+    transform,
+  } = useSortable({ id: attribute.id });
+
+  const style = {
+    // transition,
+    transform: CSS.Transform.toString(transform),
+  };
+
   return (
-    <AccordionItem value={attribute.id}>
+    <AccordionItem ref={setNodeRef} style={style} value={attribute.id}>
       <div className="flex items-center justify-between gap-2 rounded-sm rounded-b-none border-b border-transparent p-1 pl-4 text-sm font-medium [&:has([data-state=open])]:border-border">
         <p className="flex w-full flex-row flex-nowrap items-center overflow-hidden">
           <span className="truncate">{attribute.name}</span>
@@ -1192,6 +1379,16 @@ const AttributeAccordion = ({
             <ChevronDownIcon className="size-4 transition-transform duration-200" />
           </Button>
         </AccordionTrigger>
+        <Button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab"
+          size={'icon'}
+          variant={'ghost'}
+          // disabled={disableSortButton}
+        >
+          <GripVertical className="size-4" />
+        </Button>
       </div>
       <AccordionContent>
         <ApiStatusIndicator
@@ -1219,7 +1416,7 @@ const AttributeAccordion = ({
               }}
               value={values.attributeTermIds}
               type="multiple"
-              className="mt-3"
+              className="mt-1"
             >
               {terms.map((term) => (
                 <ToggleGroupItem key={term.id} value={term.id}>
@@ -1227,6 +1424,36 @@ const AttributeAccordion = ({
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
+
+            <Separator className="mb-2.5 mt-3.5 w-full" />
+            <div className="w-fit">
+              <Label htmlFor="appearance" className="mb-2.5 inline-block">
+                Appearance
+              </Label>
+              <Select
+                value={(attribute as any).appearance || 'button'}
+                onValueChange={(value) => {
+                  const newValue = values.attributes.map((attr) => {
+                    if (attr.id === attribute.id) {
+                      return {
+                        ...attr,
+                        appearance: value,
+                      };
+                    }
+                    return attr;
+                  });
+                  setFieldValue('attributes', newValue);
+                }}
+              >
+                <SelectTrigger id="appearance" className="min-w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="button">Button</SelectItem>
+                  <SelectItem value="dropdown">Dropdown</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </>
         )}
       </AccordionContent>
@@ -1248,19 +1475,50 @@ const ProductVariations = ({ productId }: { productId: string }) => {
       toast.success(formatCount(data.data.data.total, '$ variation$$ added'));
     },
   });
-
   const productVariations = productQuery.data?.data.variations || [];
+
   const hasData = productVariations.length > 0;
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-5">
         <CardTitle>
           Variations{' '}
           {productQuery.isRefetching && (
             <Spinner className="ml-2 inline-block size-4" />
           )}
         </CardTitle>
+
+        {hasData && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant={'secondary'}
+              loading={createProductVariationsMutation.isPending}
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: 'Regenerate variations?',
+                    description:
+                      'Are you sure you want to regenerate all the variations?',
+                  })
+                ) {
+                  createProductVariationsMutation.mutate({
+                    productId,
+                    regenerateVariations: true,
+                  });
+                }
+              }}
+            >
+              Regenerate variations
+            </Button>
+            <AddNewVariation
+              productId={productId}
+              onCreate={() => {
+                productQuery.refetch();
+              }}
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <ApiStatusIndicator
@@ -1308,6 +1566,7 @@ const ProductVariations = ({ productId }: { productId: string }) => {
                     key={variation.id}
                     variation={variation}
                     productId={productId}
+                    productVariations={productVariations}
                   />
                 );
               })}
@@ -1319,12 +1578,128 @@ const ProductVariations = ({ productId }: { productId: string }) => {
   );
 };
 
+export const AddNewVariation = ({
+  productId,
+  onCreate,
+}: {
+  productId: string;
+  onCreate: () => void;
+}) => {
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedTerms, setSelectedTerms] = useState<
+    Record<
+      string,
+      {
+        id: string;
+        name: string;
+      }
+    >
+  >({});
+
+  const createProductVariationMutationOptions = useMutation({
+    ...getCreateProductVariationMutationOptions(),
+    onSuccess() {
+      onCreate();
+      toast.success(
+        `Variation ${Object.values(selectedTerms)
+          .map((item) => item.name)
+          .join(' + ')} created`
+      );
+      setSelectedTerms({});
+      setOpenDialog(false);
+    },
+  });
+
+  const productQuery = useQuery({
+    ...getProductByIdQueryOptions({ id: productId! }),
+    gcTime: 0,
+    retry: false,
+  });
+  const attributes = productQuery.data?.data.attributes || [];
+  const attributeTerms = productQuery.data?.data.attributeTerms || [];
+
+  return (
+    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+      <DialogTrigger asChild>
+        <Button variant={'secondary'}>Add manually</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogTitle>Add new variation</DialogTitle>
+        <div className="mt-3">
+          <div className="grid grid-cols-3 gap-5">
+            {attributes.map((attribute) => (
+              <div key={attribute.id}>
+                <Label htmlFor={attribute.id}>{attribute.name}</Label>
+                <Select
+                  value={
+                    selectedTerms[attribute.id]
+                      ? `${selectedTerms[attribute.id]?.id}__${
+                          selectedTerms[attribute.id]?.name
+                        }`
+                      : undefined
+                  }
+                  onValueChange={(value) => {
+                    const [id, name] = value.split('__');
+
+                    setSelectedTerms((prev) => ({
+                      ...prev,
+                      [attribute.id]: {
+                        id,
+                        name,
+                      },
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="mt-1" id={attribute.id}>
+                    <SelectValue placeholder={`Select ${attribute.name}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {attributeTerms
+                      .filter(
+                        (attributeTerm) =>
+                          attributeTerm.productAttributeId === attribute.id
+                      )
+                      .map((attributeTerm) => (
+                        <SelectItem
+                          value={`${attributeTerm.id}__${attributeTerm.name}`}
+                          key={attributeTerm.id}
+                        >
+                          {attributeTerm.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="submit"
+              loading={createProductVariationMutationOptions.isPending}
+              onClick={() => {
+                createProductVariationMutationOptions.mutate({
+                  productId,
+                  termIds: Object.values(selectedTerms).map((item) => item.id),
+                });
+              }}
+            >
+              Create
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const VariationAccordion = ({
   variation,
   productId,
+  productVariations,
 }: {
   variation: ProductVariation;
   productId: string;
+  productVariations: ProductVariation[];
 }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -1403,7 +1778,16 @@ const VariationAccordion = ({
     stock: variation.stock ?? '',
     lowStockThreshold: variation.lowStockThreshold ?? '',
     image: variation.image || '',
+    imageSameAsVariationId: variation.imageSameAsVariationId || '',
   };
+
+  const imageSameAsVariations = useMemo(
+    () =>
+      productVariations.filter(
+        (productVariation) => productVariation.id !== variation.id
+      ),
+    [productVariations, variation.id]
+  );
   // console.log(variationName, { initialValues });
   return (
     <Formik
@@ -1449,6 +1833,7 @@ const VariationAccordion = ({
               image: formValues.image || (null as any),
               stock: formValues.stock ?? (null as any),
               lowStockThreshold: formValues.lowStockThreshold ?? (null as any),
+              imageSameAsVariationId: formValues.imageSameAsVariationId,
             },
           });
           actions.resetForm({
@@ -1474,6 +1859,7 @@ const VariationAccordion = ({
           value={variation.id}
           className="[&[data-state=closed]_#saveChangesHeaderButton]:!pointer-events-auto [&[data-state=closed]_#saveChangesHeaderButton]:!opacity-100"
         >
+          {dirty && <FormHotKeys />}
           <div
             className={cn(
               'flex flex-1 items-center justify-between gap-2 rounded-sm rounded-b-none border-b border-transparent p-1 pl-4 text-sm font-medium [&:has([data-state=open])]:border-border'
@@ -1534,71 +1920,107 @@ const VariationAccordion = ({
           </div>
           <AccordionContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div {...getRootProps()} className="w-fit">
-                <input {...getInputProps()} />
-                {imageFile ? (
-                  <div>
-                    <div className="relative aspect-square w-28 cursor-pointer overflow-hidden bg-muted">
-                      <Button
-                        size={'icon'}
-                        className="absolute right-2 top-2 size-6 rounded-md"
-                        variant={'destructive'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setImageFile(null);
-                        }}
-                      >
-                        <X className="size-3.5" />
-                      </Button>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={URL.createObjectURL(imageFile)}
-                        alt="Image"
-                        className="size-full object-cover"
+              <div className="flex items-start justify-start gap-3">
+                <div {...getRootProps()} className="w-fit shrink-0">
+                  <input {...getInputProps()} />
+                  {imageFile ? (
+                    <div>
+                      <div className="relative aspect-square w-28 cursor-pointer overflow-hidden bg-muted">
+                        <Button
+                          size={'icon'}
+                          className="absolute right-2 top-2 size-6 rounded-md"
+                          variant={'destructive'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImageFile(null);
+                          }}
+                        >
+                          <X className="size-3.5" />
+                        </Button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={URL.createObjectURL(imageFile)}
+                          alt="Image"
+                          className="size-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  ) : values.image ? (
+                    <div>
+                      <div className="relative aspect-square w-28 cursor-pointer overflow-hidden bg-muted">
+                        <Button
+                          size={'icon'}
+                          className="absolute right-2 top-2 size-6 rounded-md"
+                          variant={'destructive'}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (
+                              await confirm({
+                                description:
+                                  'You want to remove the image from this variation',
+                              })
+                            ) {
+                              setFieldValue('image', '');
+                            }
+                          }}
+                        >
+                          <X className="size-3.5" />
+                        </Button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={values.image}
+                          alt="Image"
+                          className="size-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        'flex size-28 cursor-pointer items-center justify-center rounded-md border border-dashed border-border',
+                        isDragActive && 'border-foreground'
+                      )}
+                    >
+                      <Upload
+                        className={cn('size-8', !isDragActive && 'opacity-60')}
                       />
                     </div>
-                  </div>
-                ) : values.image ? (
-                  <div>
-                    <div className="relative aspect-square w-28 cursor-pointer overflow-hidden bg-muted">
-                      <Button
-                        size={'icon'}
-                        className="absolute right-2 top-2 size-6 rounded-md"
-                        variant={'destructive'}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (
-                            await confirm({
-                              description:
-                                'You want to remove the image from this variation',
-                            })
-                          ) {
-                            setFieldValue('image', '');
-                          }
-                        }}
+                  )}
+                </div>
+
+                <Select
+                  value={values.imageSameAsVariationId}
+                  onValueChange={(value) => {
+                    setFieldValue(
+                      'imageSameAsVariationId',
+                      value === 'remove' ? '' : value
+                    );
+                  }}
+                >
+                  <SelectTrigger className="w-auto min-w-[180px] [&>span]:pr-1">
+                    <SelectValue placeholder="Image same as" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {values.imageSameAsVariationId && (
+                      <SelectItem
+                        value="remove"
+                        className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
                       >
-                        <X className="size-3.5" />
-                      </Button>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={values.image}
-                        alt="Image"
-                        className="size-full object-cover"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      'flex size-28 cursor-pointer items-center justify-center rounded-md border border-dashed border-border',
-                      isDragActive && 'border-foreground'
+                        Remove
+                      </SelectItem>
                     )}
-                  >
-                    <Upload
-                      className={cn('size-8', !isDragActive && 'opacity-60')}
-                    />
-                  </div>
-                )}
+                    {imageSameAsVariations.map((productVariation) => (
+                      <SelectItem
+                        key={productVariation.id}
+                        value={productVariation.id}
+                      >
+                        {getVariationNameFromTerms(
+                          findTerms(productVariation.termIds)
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 <FormikInput

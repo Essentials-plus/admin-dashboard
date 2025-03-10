@@ -1,5 +1,6 @@
 import routes from '@/config/routes';
 import {
+  BookOpenText,
   Box,
   CookingPot,
   LayoutDashboard,
@@ -85,5 +86,20 @@ export const sidebarNavigationMenuItems: SidebarNavigationMenuItem[] = [
     icon: <Tag />,
     label: 'Coupon codes',
     url: routes.couponCodes,
+  },
+  {
+    icon: <BookOpenText />,
+    label: 'Pages',
+    url: routes.pages,
+    submenuItems: [
+      {
+        label: 'Home',
+        url: routes.homePage,
+      },
+      {
+        label: 'Products/Lifestyle',
+        url: routes.productsPage,
+      },
+    ],
   },
 ];

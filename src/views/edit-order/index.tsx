@@ -23,11 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from '@/components/ui/carousel';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,17 +41,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import envs from '@/config/envs';
+import routes from '@/config/routes';
 import { productOrderStatusOptions } from '@/constants/product-order';
 import useAppClipboard from '@/hooks/useAppClipboard';
-import {
-  appDefaultDateFormatter,
-  getProductPrice,
-  getProductTaxAmount,
-} from '@/lib/utils';
+import { appDefaultDateFormatter, getProductTaxAmount } from '@/lib/utils';
 import { CouponTypeEnum } from '@/types/api-responses/coupon-code';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Formik } from 'formik';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Fragment, useMemo, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
@@ -64,11 +58,6 @@ import { toast } from 'sonner';
 export default function EditOrder() {
   const router = useRouter();
   const { copy, copied } = useAppClipboard();
-
-  const printContainer = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({
-    content: () => printContainer.current,
-  });
 
   const id = router.query.id as string;
 
@@ -90,8 +79,8 @@ export default function EditOrder() {
   const order = orderQuery?.data?.data;
 
   const orderedProducts = useMemo(
-    () => order?.products || [],
-    [order?.products]
+    () => order?.orderItems || [],
+    [order?.orderItems]
   );
 
   const { orderTotalBeforeDiscount, totalTax21Percent, totalTax9Percent } =
@@ -99,25 +88,22 @@ export default function EditOrder() {
       () =>
         orderedProducts.reduce(
           (accumulator, currentValue) => {
-            const price = getProductPrice(
-              currentValue.product,
-              currentValue.variationId
-            );
+            const price = currentValue.price;
 
             const taxAmount = getProductTaxAmount({
               productPrice: price ?? 0,
-              taxPercent: currentValue.product.taxPercent,
+              taxPercent: currentValue.taxPercent,
             });
 
             return {
               orderTotalBeforeDiscount:
-                (price ?? 0) * currentValue.count +
+                (price ?? 0) * currentValue.quantity +
                 accumulator.orderTotalBeforeDiscount,
               totalTax9Percent:
-                (currentValue.product.taxPercent === 'TAX9' ? taxAmount : 0) +
+                (currentValue.taxPercent === 'TAX9' ? taxAmount : 0) +
                 accumulator.totalTax9Percent,
               totalTax21Percent:
-                (currentValue.product.taxPercent === 'TAX21' ? taxAmount : 0) +
+                (currentValue.taxPercent === 'TAX21' ? taxAmount : 0) +
                 accumulator.totalTax21Percent,
             };
           },
@@ -144,6 +130,12 @@ export default function EditOrder() {
   const initialValues = {
     status: order?.status,
   };
+
+  const printContainer = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    content: () => printContainer.current,
+    documentTitle: `Invoice-for-order-${order?.id}`,
+  });
 
   if (!orderQuery.data) {
     return <ApiStatusIndicator query={orderQuery} noData={true} />;
@@ -202,7 +194,7 @@ export default function EditOrder() {
                       </Button>
                     </CardTitle>
                     <CardDescription>
-                      Date: {appDefaultDateFormatter(order?.createdAt!)}
+                      Paid at: {appDefaultDateFormatter(order?.paidAt!)}
                     </CardDescription>
                   </div>
                 </div>
@@ -289,57 +281,60 @@ export default function EditOrder() {
                     </TableHeader>
                     <TableBody>
                       {orderedProducts.map((product) => {
-                        const price = getProductPrice(
-                          product.product,
-                          product.variationId
-                        );
+                        const price = product.price;
                         return (
                           <TableRow key={product.id}>
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <Carousel className="w-9">
-                                  <CarouselContent>
-                                    {product.product.images.map(
-                                      (image, index) => (
-                                        <CarouselItem key={index}>
-                                          <Image
-                                            src={image}
-                                            alt={product.product.name}
-                                            width={100}
-                                            height={100}
-                                            className="size-9 rounded-sm bg-muted object-cover"
-                                          />
-                                        </CarouselItem>
-                                      )
-                                    )}
-                                  </CarouselContent>
-                                </Carousel>
+                                {product.image && (
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Image
+                                        src={product.image}
+                                        alt={product.name}
+                                        width={100}
+                                        height={100}
+                                        className="size-9 cursor-pointer rounded-sm bg-muted object-cover"
+                                      />
+                                    </DialogTrigger>
+                                    <DialogContent className="pt-10 lg:w-[600px]">
+                                      <Image
+                                        src={product.image}
+                                        alt={product.name}
+                                        width={2000}
+                                        height={2000}
+                                        className="h-auto w-full bg-muted object-cover"
+                                      />
+                                    </DialogContent>
+                                  </Dialog>
+                                )}
                                 <div>
-                                  <p className="text-muted-foreground">
-                                    {product.product.name}
-                                  </p>
-                                  {product.variation && (
+                                  <Link
+                                    href={routes.editProduct(product.productId)}
+                                    className="font-medium text-foreground hover:text-primary hover:underline"
+                                  >
+                                    {product.name}
+                                  </Link>
+                                  {product.attributes.productVariations && (
                                     <div className="mt-px flex flex-wrap divide-x divide-muted-foreground/60 text-xs text-muted-foreground [&>p:first-child]:ml-0 [&>p:first-child]:pl-0 [&>p>span]:text-foreground [&>p]:ml-2 [&>p]:pl-2">
-                                      {product.variation.termIds.map(
-                                        (termId) => {
-                                          const attributeTerm =
-                                            product.product.attributeTerms.find(
-                                              (attributeTerm) =>
-                                                attributeTerm.id === termId
-                                            );
-
-                                          const attribute = (
-                                            product.product.attributes || []
-                                          ).find(
-                                            (attribute) =>
-                                              attribute.id ===
-                                              attributeTerm?.productAttributeId
-                                          );
+                                      {product.attributes.productVariations.map(
+                                        (productVariation, i) => {
                                           return (
-                                            <Fragment key={termId}>
+                                            <Fragment
+                                              key={`${productVariation.attribute.id}_${productVariation.attributeTerm.id}_${i}`}
+                                            >
                                               <p>
-                                                <span>{attribute?.name}:</span>{' '}
-                                                {attributeTerm?.name}{' '}
+                                                {
+                                                  productVariation.attribute
+                                                    ?.name
+                                                }
+                                                :{' '}
+                                                <span>
+                                                  {
+                                                    productVariation
+                                                      .attributeTerm?.name
+                                                  }
+                                                </span>
                                               </p>
                                             </Fragment>
                                           );
@@ -356,11 +351,11 @@ export default function EditOrder() {
                             </TableCell>
                             <TableCell>
                               <span className="mr-2 opacity-40">×</span>
-                              {product.count}
+                              {product.quantity}
                             </TableCell>
                             <TableCell className="text-right">
                               {envs.CURRENCY_SYMBOL}
-                              {price! * product.count}
+                              {price! * product.quantity}
                             </TableCell>
                           </TableRow>
                         );
@@ -447,13 +442,19 @@ export default function EditOrder() {
                   <div className="grid gap-3">
                     <div className="font-semibold">Shipping Information</div>
                     <address className="grid gap-0.5 not-italic text-muted-foreground">
-                      <span>House number: {order?.user.nr || '-'}</span>
-                      <span>Address: {order?.user.address || '-'}</span>
-                      <span>City: {order?.user.city || '-'}</span>
                       <span>
-                        Zipcode: {order?.user.zipCode?.zipCode || '-'}
+                        House number: {order?.shippingAddress.nr || '-'}
                       </span>
-                      <span>Addition: {order?.user.addition || '-'}</span>
+                      <span>
+                        Address: {order?.shippingAddress.address || '-'}
+                      </span>
+                      <span>City: {order?.shippingAddress.city || '-'}</span>
+                      <span>
+                        Zipcode: {order?.shippingAddress.zipCode || '-'}
+                      </span>
+                      <span>
+                        Addition: {order?.shippingAddress.addition || '-'}
+                      </span>
                     </address>
                   </div>
                   <div className="grid auto-rows-max gap-3">
@@ -470,7 +471,8 @@ export default function EditOrder() {
                     <div className="flex items-center justify-between">
                       <dt className="text-muted-foreground">Customer</dt>
                       <dd>
-                        {order?.user.name} {order?.user.surname}
+                        {order?.shippingAddress.name}{' '}
+                        {order?.shippingAddress.surname}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between">
@@ -489,9 +491,9 @@ export default function EditOrder() {
                       <dd>
                         <a
                           className="hover:underline"
-                          href={`tel:${order?.user.mobile}`}
+                          href={`tel:${order?.shippingAddress.mobile}`}
                         >
-                          {order?.user.mobile || '-'}
+                          {order?.shippingAddress.mobile || '-'}
                         </a>
                       </dd>
                     </div>

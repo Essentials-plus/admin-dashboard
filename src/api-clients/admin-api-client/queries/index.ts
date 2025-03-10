@@ -13,6 +13,7 @@ import {
   ProductAttributeTerms,
 } from '@/types/api-responses/product-attribute';
 import { ProductCategory } from '@/types/api-responses/product-category';
+import { SpotlightsProductBanner } from '@/types/api-responses/spotlights-product-banner';
 import { User, UserPlan } from '@/types/api-responses/users';
 import { WeeklyMealWithMeals } from '@/types/api-responses/weekly-meals';
 import { ZipCode } from '@/types/api-responses/zip-code';
@@ -293,6 +294,23 @@ export const getProductCategoriesQueryOptions = ({
   };
 };
 
+export const getProductCategoriesRecursivelyQueryOptions = ({
+  axiosReqConfig,
+}: {
+  axiosReqConfig?: AxiosRequestConfig;
+} = {}) => {
+  return {
+    queryKey: ['get-product-categories-recursively', axiosReqConfig],
+    queryFn: () =>
+      adminApiClient
+        .get<ApiResponseSuccessBase<ProductCategory[]>>(
+          `/product/categories/recursively`,
+          axiosReqConfig
+        )
+        .then((res) => res.data),
+  };
+};
+
 export const getProductCategoryByIdQueryOptions = ({ id }: { id: string }) => {
   return {
     queryKey: ['get-product-category', id],
@@ -390,5 +408,49 @@ export const getIngredientCategoryByIdQueryOptions = ({
         )
         .then((res) => res.data),
     enabled: !!id,
+  };
+};
+
+export const getSpotlightsProductBannersQueryOptions = () => {
+  return {
+    queryKey: ['get-spotlights-product-banners'],
+    queryFn: () =>
+      adminApiClient
+        .get<ApiResponseSuccessBase<SpotlightsProductBanner[]>>(
+          `/spotlights-product-banners`
+        )
+        .then((res) => res.data),
+  };
+};
+
+export const getSpotlightsProductBannerByIdQueryOptions = ({
+  id,
+}: {
+  id: string;
+}) => {
+  return {
+    queryKey: ['get-spotlights-product-banner-by-id', id],
+    queryFn: () =>
+      adminApiClient
+        .get<ApiResponseSuccessBase<SpotlightsProductBanner>>(
+          `/spotlights-product-banners/${id}`
+        )
+        .then((res) => res.data),
+    enabled: !!id,
+  };
+};
+
+export const getRawDataByIdentifierQueryOptions = ({
+  identifier,
+}: {
+  identifier: string;
+}) => {
+  return {
+    queryKey: ['get-raw-data-by-identifier', identifier],
+    queryFn: () =>
+      adminApiClient
+        .get<ApiResponseSuccessBase<any>>(`/raw-data/${identifier}`)
+        .then((res) => res.data),
+    enabled: !!identifier,
   };
 };

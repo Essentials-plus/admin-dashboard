@@ -1,6 +1,6 @@
 import { getProductsQueryOptions } from '@/api-clients/admin-api-client/queries';
 import ApiStatusIndicator from '@/components/api-status-indicator';
-import { Input } from '@/components/ui/input';
+import { Input, InputProps } from '@/components/ui/input';
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Product } from '@/types/api-responses/product';
@@ -14,9 +14,13 @@ import { useRef, useState } from 'react';
 type SearchProductsPopoverProps = {
   // eslint-disable-next-line no-unused-vars
   onSelect?: (product: Product) => void;
+  inputProps?: InputProps;
 };
 
-const SearchProductsPopover = ({ onSelect }: SearchProductsPopoverProps) => {
+const SearchProductsPopover = ({
+  onSelect,
+  inputProps,
+}: SearchProductsPopoverProps) => {
   // const [openCreateProductDialog, setOpenCreateProductDialog] = useState(false);
   const [openSearchResults, setOpenSearchResults] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -53,7 +57,8 @@ const SearchProductsPopover = ({ onSelect }: SearchProductsPopoverProps) => {
               onChange={(e) => setSearchValue(e.target.value)}
               autoComplete="off"
               placeholder="Search products"
-              className="pl-9"
+              {...inputProps}
+              className={cn('pl-9', inputProps?.className)}
               onFocus={() => {
                 setTimeout(() => {
                   setOpenSearchResults(true);

@@ -12,6 +12,10 @@ import {
   VariableProductSchema,
 } from '@/components/create-or-update-product-form/schema';
 import {
+  CreateSpotlightsProductBannerSchema,
+  UpdateSpotlightsProductBannerSchema,
+} from '@/components/create-or-update-spotlights-product-banners-form/schema';
+import {
   CreateWeeklyMealsSchema,
   UpdateWeeklyMealsSchema,
 } from '@/components/create-or-update-weekly-meals-form/schema';
@@ -32,6 +36,7 @@ import {
   ProductVariation,
 } from '@/types/api-responses/product-attribute';
 import { ProductCategory } from '@/types/api-responses/product-category';
+import { SpotlightsProductBanner } from '@/types/api-responses/spotlights-product-banner';
 import { User } from '@/types/api-responses/users';
 import { WeeklyMeal } from '@/types/api-responses/weekly-meals';
 import { ZipCode } from '@/types/api-responses/zip-code';
@@ -289,15 +294,27 @@ export const getUpdateProductMutationOptions = () => {
   };
 };
 
-export const getToggleProductShowOnHomePageBannerMutationOptions = () => {
+export const getToggleProductShowOnBestSellerSectionMutationOptions = () => {
   return {
-    mutationKey: ['toggle-product-show-on-home-page-banner'],
+    mutationKey: ['toggle-product-toggle-show-on-best-seller-section'],
     mutationFn: ({ id }: { id: string }) =>
       adminApiClient.put<{ success: boolean }>(
-        `/product/${id}/toggle-show-on-home-page-banner`
+        `/product/${id}/toggle-show-on-best-seller-section`
       ),
   };
 };
+export const getToggleProductShowOnCartRecommendationSectionMutationOptions =
+  () => {
+    return {
+      mutationKey: [
+        'toggle-product-toggle-show-on-cart-recommendation-section',
+      ],
+      mutationFn: ({ id }: { id: string }) =>
+        adminApiClient.put<{ success: boolean }>(
+          `/product/${id}/toggle-show-on-cart-recommendation-section`
+        ),
+    };
+  };
 
 export const getToggleLinkedProductMutationOptions = () => {
   return {
@@ -415,11 +432,21 @@ export const getUpdateProductAttributeTermsSortOrderMutationOptions = () => {
 export const getCreateProductVariationsMutationOptions = () => {
   return {
     mutationKey: ['create-product-variations'],
-    mutationFn: (data: { productId: string }) =>
+    mutationFn: (data: { productId: string; regenerateVariations?: boolean }) =>
       adminApiClient.post<ApiResponseSuccessBase<{ total: number }>>(
         '/product/variations',
         data
       ),
+  };
+};
+
+export const getCreateProductVariationMutationOptions = () => {
+  return {
+    mutationKey: ['create-product-variation'],
+    mutationFn: (data: { productId: string; termIds: string[] }) =>
+      adminApiClient.post<
+        ApiResponseSuccessBase<{ variation: ProductVariation }>
+      >('/product/variation', data),
   };
 };
 
@@ -478,13 +505,16 @@ export const getUpdateProductCategoryMutationOptions = () => {
   };
 };
 
-export const getUpdateProductCategoriesSortOrderMutationOptions = () => {
+export const getUpdateProductCategoriesSortOrderMutationOptions = ({
+  axiosConfig,
+}: { axiosConfig?: AxiosRequestConfig } = {}) => {
   return {
-    mutationKey: ['update-product-categories-sort-order'],
+    mutationKey: ['update-product-categories-sort-order', axiosConfig ?? null],
     mutationFn: ({ ids }: { ids: string[] }) =>
       adminApiClient.put<ApiResponseSuccessBase<null>>(
         `/product/update-categories-sort-order`,
-        { ids }
+        { ids },
+        axiosConfig
       ),
   };
 };
@@ -594,6 +624,63 @@ export const getDeleteIngredientCategoryMutationOptions = () => {
     mutationFn: ({ id }: { id: string }) =>
       adminApiClient.delete<ApiResponseSuccessBase<IngredientCategory>>(
         `/meal/ingredient/categories/${id}`
+      ),
+  };
+};
+
+export const getCreateSpotlightsProductBannerMutationOptions = () => {
+  return {
+    mutationKey: ['create-spotlights-product-banner'],
+    mutationFn: (data: CreateSpotlightsProductBannerSchema) =>
+      adminApiClient.post<ApiResponseSuccessBase<SpotlightsProductBanner>>(
+        '/spotlights-product-banners',
+        data
+      ),
+  };
+};
+
+export const getUpdateSpotlightsProductBannerMutationOptions = () => {
+  return {
+    mutationKey: ['update-spotlights-product-banner'],
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateSpotlightsProductBannerSchema;
+    }) =>
+      adminApiClient.put<ApiResponseSuccessBase<SpotlightsProductBanner>>(
+        `/spotlights-product-banners/${id}`,
+        data
+      ),
+  };
+};
+export const getDeleteSpotlightsProductBannerMutationOptions = () => {
+  return {
+    mutationKey: ['delete-spotlights-product-banner'],
+    mutationFn: ({ id }: { id: string }) =>
+      adminApiClient.delete<ApiResponseSuccessBase<SpotlightsProductBanner>>(
+        `/spotlights-product-banners/${id}`
+      ),
+  };
+};
+
+export const getCreateOrUpdateRawDataMutationOptions = ({
+  axiosConfig,
+}: { axiosConfig?: AxiosRequestConfig } = {}) => {
+  return {
+    mutationKey: ['create-or-update-raw-data', axiosConfig || null],
+    mutationFn: ({
+      data,
+      identifier,
+    }: {
+      data: Record<string, any>;
+      identifier: string;
+    }) =>
+      adminApiClient.post<ApiResponseSuccessBase<SpotlightsProductBanner>>(
+        `/raw-data/${identifier}`,
+        { data },
+        axiosConfig
       ),
   };
 };

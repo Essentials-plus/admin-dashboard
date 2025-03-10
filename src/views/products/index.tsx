@@ -173,199 +173,206 @@ const Products = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {productsQuery.data?.data?.map((product) => (
-                  <TableRow
-                    onDoubleClick={() => {
-                      router.push(routes.editProduct(product.id));
-                    }}
-                    key={product.id}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="relative size-fit">
-                                <Circle
-                                  tabIndex={0}
-                                  className="__fv relative w-12 rounded-md bg-muted"
-                                >
-                                  <Image
-                                    fill
-                                    src={product.images[0]}
-                                    alt={product.name}
-                                    className="object-cover"
-                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                  />
-
-                                  {product.images.length >= 2 && (
-                                    <div className="absolute bottom-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-md bg-background px-1 text-[8px]">
-                                      +{product.images.length - 1}
-                                    </div>
-                                  )}
-                                </Circle>
-                              </div>
-                            </TooltipTrigger>
-
-                            {product.images.length > 1 && (
-                              <TooltipContent
-                                collisionPadding={15}
-                                className="overflow-hidden p-2"
-                              >
-                                <div className="flex max-h-[300px] max-w-[400px] flex-wrap gap-2 overflow-y-auto">
-                                  {product.images.map((image, i) => (
-                                    <Circle
-                                      key={i}
-                                      className="relative w-[94px] rounded-md bg-foreground/5"
-                                    >
-                                      <Image
-                                        fill
-                                        src={image}
-                                        alt={product.name}
-                                        className="object-cover"
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                      />
-                                    </Circle>
-                                  ))}
-                                </div>
-                                <TooltipArrow className="fill-muted" />
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
+                {productsQuery.data?.data?.map((product) => {
+                  return (
+                    <TableRow
+                      onDoubleClick={() => {
+                        router.push(routes.editProduct(product.id));
+                      }}
+                      key={product.id}
+                    >
+                      <TableCell>
                         <div className="flex items-center gap-2">
-                          <p>{product.name}</p>
-                          {product.showOnHomePageBanner && (
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="relative size-fit">
+                                  <Circle
+                                    tabIndex={0}
+                                    className="__fv relative w-12 rounded-md bg-muted"
+                                  >
+                                    <Image
+                                      fill
+                                      src={product.images[0]}
+                                      alt={product.name}
+                                      className="object-cover"
+                                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    />
+
+                                    {product.images.length >= 2 && (
+                                      <div className="absolute bottom-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-md bg-background px-1 text-[8px]">
+                                        +{product.images.length - 1}
+                                      </div>
+                                    )}
+                                  </Circle>
+                                </div>
+                              </TooltipTrigger>
+
+                              {product.images.length > 1 && (
+                                <TooltipContent
+                                  collisionPadding={15}
+                                  className="overflow-hidden p-2"
+                                >
+                                  <div className="flex max-h-[300px] max-w-[400px] flex-wrap gap-2 overflow-y-auto">
+                                    {product.images.map((image, i) => (
+                                      <Circle
+                                        key={i}
+                                        className="relative w-[94px] rounded-md bg-foreground/5"
+                                      >
+                                        <Image
+                                          fill
+                                          src={image}
+                                          alt={product.name}
+                                          className="object-cover"
+                                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        />
+                                      </Circle>
+                                    ))}
+                                  </div>
+                                  <TooltipArrow className="fill-muted" />
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                          <div className="flex items-center gap-2">
+                            <p>{product.name}</p>
+                            {product.showOnBestSellerSection && (
+                              <TooltipProvider delayDuration={0}>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Star className="size-2.5 fill-yellow-500 text-yellow-500" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    This product is added on the best seller
+                                    section
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {product.type === 'simple' ? (
+                          <div>
+                            {typeof product.salePrice === 'number' && (
+                              <p>
+                                {envs.CURRENCY_SYMBOL}
+                                {product.salePrice}
+                              </p>
+                            )}
+                            <p
+                              className={cn(
+                                typeof product.salePrice === 'number' &&
+                                  'text-xs line-through opacity-60'
+                              )}
+                            >
+                              {typeof product.regularPrice === 'number'
+                                ? `${envs.CURRENCY_SYMBOL}${product.regularPrice}`
+                                : '- - -'}
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            {envs.CURRENCY_SYMBOL}
+                            {product.lowestPrice} - {envs.CURRENCY_SYMBOL}
+                            {product.highestPrice}
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {product.type === 'simple' &&
+                          typeof product.stock === 'number'
+                            ? product.stock
+                            : '- - -'}
+
+                          {((product.type === 'simple' &&
+                            typeof product.stock === 'number' &&
+                            typeof product.lowStockThreshold === 'number' &&
+                            product.stock <= product.lowStockThreshold) ||
+                            (product.type === 'variable' &&
+                              product.variations?.find(
+                                (variation) =>
+                                  typeof variation.stock === 'number' &&
+                                  typeof variation.lowStockThreshold ===
+                                    'number' &&
+                                  variation.stock <= variation.lowStockThreshold
+                              ))) && (
                             <TooltipProvider delayDuration={0}>
                               <Tooltip>
-                                <TooltipTrigger>
-                                  <Star className="size-2.5 fill-yellow-500 text-yellow-500" />
+                                <TooltipTrigger className="__fv rounded-full">
+                                  <OctagonAlert className="size-3 text-destructive" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  This product is added on the home page banner
+                                  {product.type === 'simple'
+                                    ? (product.stock || 0) <= 0
+                                      ? 'This product is out of stock. Customers will not be able to order this product'
+                                      : 'This product is running low on stock.'
+                                    : 'This product has some variation that running low on stock.'}
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {product.type === 'simple' ? (
-                        <div>
-                          {typeof product.salePrice === 'number' && (
-                            <p>
-                              {envs.CURRENCY_SYMBOL}
-                              {product.salePrice}
-                            </p>
-                          )}
-                          <p
-                            className={cn(
-                              typeof product.salePrice === 'number' &&
-                                'text-xs line-through opacity-60'
-                            )}
-                          >
-                            {typeof product.regularPrice === 'number'
-                              ? `${envs.CURRENCY_SYMBOL}${product.regularPrice}`
-                              : '- - -'}
-                          </p>
-                        </div>
-                      ) : (
-                        '- - -'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        {product.type === 'simple' &&
-                        typeof product.stock === 'number'
-                          ? product.stock
-                          : '- - -'}
-
-                        {((product.type === 'simple' &&
-                          typeof product.stock === 'number' &&
-                          typeof product.lowStockThreshold === 'number' &&
-                          product.stock <= product.lowStockThreshold) ||
-                          (product.type === 'variable' &&
-                            product.variations?.find(
-                              (variation) =>
-                                typeof variation.stock === 'number' &&
-                                typeof variation.lowStockThreshold ===
-                                  'number' &&
-                                variation.stock <= variation.lowStockThreshold
-                            ))) && (
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger className="__fv rounded-full">
-                                <OctagonAlert className="size-3 text-destructive" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {product.type === 'simple'
-                                  ? (product.stock || 0) <= 0
-                                    ? 'This product is out of stock. Customers will not be able to order this product'
-                                    : 'This product is running low on stock.'
-                                  : 'This product has some variation that running low on stock.'}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={'outline'} className="capitalize">
-                        {product.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              router.push(routes.editProduct(product.id));
-                            }}
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={deleteProductMutation.isPending}
-                            onClick={async () => {
-                              if (await confirm({})) {
-                                toast.promise(
-                                  deleteProductMutation.mutateAsync({
-                                    id: product.id,
-                                  }),
-                                  {
-                                    loading: `Deleting product "${product.name}"`,
-                                    success(data) {
-                                      queryClient.invalidateQueries({
-                                        queryKey: extractQueryKey(
-                                          getProductsQueryOptions
-                                        ),
-                                      });
-                                      return `Product "${data.data.data.name}" deleted.`;
-                                    },
-                                  }
-                                );
-                              }
-                            }}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={'outline'} className="capitalize">
+                          {product.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-haspopup="true"
+                              size="icon"
+                              variant="ghost"
+                            >
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                router.push(routes.editProduct(product.id));
+                              }}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={deleteProductMutation.isPending}
+                              onClick={async () => {
+                                if (await confirm({})) {
+                                  toast.promise(
+                                    deleteProductMutation.mutateAsync({
+                                      id: product.id,
+                                    }),
+                                    {
+                                      loading: `Deleting product "${product.name}"`,
+                                      success(data) {
+                                        queryClient.invalidateQueries({
+                                          queryKey: extractQueryKey(
+                                            getProductsQueryOptions
+                                          ),
+                                        });
+                                        return `Product "${data.data.data.name}" deleted.`;
+                                      },
+                                    }
+                                  );
+                                }
+                              }}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
 

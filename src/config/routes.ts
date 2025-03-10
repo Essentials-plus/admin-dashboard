@@ -37,6 +37,10 @@ const routes = {
   login: '/login',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
+
+  pages: '/pages',
+  homePage: '/pages/home',
+  productsPage: '/pages/products',
 };
 
 export const unAuthenticatedRoutes = [

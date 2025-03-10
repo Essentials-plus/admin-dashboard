@@ -34,4 +34,5 @@ export type ProductVariation = {
   productId: string | null;
   termIds: string[];
   image: string | null;
+  imageSameAsVariationId: string | null;
 };

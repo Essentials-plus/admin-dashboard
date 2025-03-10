@@ -5,6 +5,7 @@ import {
   UpdateUserSchema,
   updateUserSchema,
 } from '@/components/edit-user-form/schema';
+import FloatingFormActionsBar from '@/components/floating-form-actions-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Circle from '@/components/ui/circle';
@@ -22,7 +23,7 @@ import { calculateUserCalorie, cn, getApiErrorMessage } from '@/lib/utils';
 import { Optionalize } from '@/types/utils';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Formik } from 'formik';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Info } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -62,6 +63,8 @@ const EditUserForm = () => {
     return <ApiStatusIndicator noData={false} query={userQuery} />;
   }
   const userData = userQuery.data.data;
+  const isGuestUser = (userData as any)?.password === null;
+
   const mealPlan = userData.plan;
 
   const userTotalCalNeed =
@@ -127,6 +130,15 @@ const EditUserForm = () => {
         return (
           <form onSubmit={handleSubmit}>
             <div className="container">
+              <FloatingFormActionsBar
+                wrapper={{
+                  className: 'max-lg:hidden',
+                }}
+                saveButton={{
+                  loading: isSubmitting,
+                }}
+                discardButton={{ disabled: isSubmitting }}
+              />
               <BeforeUnloadComponent enabled={dirty} />
               <div className="grid flex-1 items-start gap-4 sm:py-0 md:gap-8">
                 <div className="grid flex-1 gap-4">
@@ -243,11 +255,21 @@ const EditUserForm = () => {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 gap-5 md:grid-cols-2">
                       <FormikInput type="email" label="Email" name="email" />
-                      <FormikInput
-                        type="text"
-                        label="Password"
-                        name="password"
-                      />
+                      <div>
+                        <FormikInput
+                          disabled={isGuestUser}
+                          type="text"
+                          label="Password"
+                          name="password"
+                        />
+                        {isGuestUser && (
+                          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-yellow-500">
+                            <Info className="size-3" />
+                            You cannot set the password for this user because
+                            they are a Guest user.
+                          </p>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -349,7 +371,9 @@ const EditUserForm = () => {
                           </div>
                         </>
                       ) : (
-                        <p className="text-center">User has no meal plan yet</p>
+                        <p className="py-10 text-center text-muted-foreground">
+                          User has no meal plan yet.
+                        </p>
                       )}
                     </CardContent>
                   </Card>

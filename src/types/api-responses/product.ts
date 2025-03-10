@@ -3,6 +3,7 @@ import {
   ProductAttributeTerm,
   ProductVariation,
 } from '@/types/api-responses/product-attribute';
+import { ProductCategory } from '@/types/api-responses/product-category';
 
 /* eslint-disable no-unused-vars */
 export enum ProductTypeEnum {
@@ -41,7 +42,8 @@ export type Product = {
     | undefined;
   taxPercent: ProductTaxPercentType;
   salePrice: number | null;
-  showOnHomePageBanner: boolean;
+  showOnBestSellerSection: boolean;
+  showOnCartRecommendationSection: boolean;
   linkedProducts: Product[];
   regularPrice: number | null;
   images: string[];
@@ -50,5 +52,10 @@ export type Product = {
   attributes?: ProductAttribute[];
   attributeTerms?: ProductAttributeTerm[];
   variations?: ProductVariation[];
-  categoryId?: string | null;
+  categories: ProductCategory[];
+  attributesInfo: {
+    sortOrder?: string[];
+  } | null;
+  highestPrice: number | null;
+  lowestPrice: number | null;
 };

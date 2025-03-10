@@ -138,7 +138,16 @@ export default function Users() {
                             user.name[0]
                           )}
                         </Circle>
-                        {user.name} {user.surname}
+                        <div>
+                          <p>
+                            {user.name} {user.surname}
+                          </p>
+                          {user.isGuestUser && (
+                            <span className="rounded-sm bg-blue-500 px-1.5 py-0.5 text-[10px] text-white">
+                              Guest
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>

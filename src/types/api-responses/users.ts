@@ -55,4 +55,5 @@ export type User = {
   mobile: string | null;
   customer: string | null;
   verified: boolean;
+  isGuestUser?: boolean;
 };
