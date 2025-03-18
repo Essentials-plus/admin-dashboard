@@ -9,7 +9,7 @@ import { z } from 'zod';
 export const createMealSchema = z.object({
   meal: z.nativeEnum(MealTypeEnum),
   mealNumber: z.string(),
-  mealName: z.string().min(5),
+  mealName: z.string().min(1),
   preparationMethod: z.array(
     z.object({
       id: z.string().uuid(),
