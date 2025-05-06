@@ -333,18 +333,20 @@ const EditUserForm = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-3">
                         Meal plan{' '}
-                        <Badge
-                          variant={
-                            mealPlan?.status === 'active'
-                              ? 'success'
-                              : mealPlan?.status === 'canceled'
-                              ? 'destructive'
-                              : 'default'
-                          }
-                          className="capitalize"
-                        >
-                          {mealPlan?.status}
-                        </Badge>{' '}
+                        {mealPlan?.status && (
+                          <Badge
+                            variant={
+                              mealPlan?.status === 'active'
+                                ? 'success'
+                                : mealPlan?.status === 'canceled'
+                                ? 'destructive'
+                                : 'default'
+                            }
+                            className="capitalize"
+                          >
+                            {mealPlan?.status}
+                          </Badge>
+                        )}
                       </CardTitle>
                     </CardHeader>
 
