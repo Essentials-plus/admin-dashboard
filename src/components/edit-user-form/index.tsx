@@ -6,6 +6,7 @@ import {
   updateUserSchema,
 } from '@/components/edit-user-form/schema';
 import FloatingFormActionsBar from '@/components/floating-form-actions-bar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Circle from '@/components/ui/circle';
@@ -330,7 +331,21 @@ const EditUserForm = () => {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Meal plan</CardTitle>
+                      <CardTitle className="flex items-center gap-3">
+                        Meal plan{' '}
+                        <Badge
+                          variant={
+                            mealPlan?.status === 'active'
+                              ? 'success'
+                              : mealPlan?.status === 'canceled'
+                              ? 'destructive'
+                              : 'default'
+                          }
+                          className="capitalize"
+                        >
+                          {mealPlan?.status}
+                        </Badge>{' '}
+                      </CardTitle>
                     </CardHeader>
 
                     <CardContent>
