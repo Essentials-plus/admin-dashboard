@@ -41,6 +41,8 @@ const routes = {
   pages: '/pages',
   homePage: '/pages/home',
   productsPage: '/pages/products',
+  howItWorksPage: '/pages/how-it-works',
+  loginPage: '/pages/login',
 };
 
 export const unAuthenticatedRoutes = [

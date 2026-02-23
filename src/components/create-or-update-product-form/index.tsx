@@ -62,7 +62,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 import Spinner from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Tooltip,
@@ -343,8 +342,8 @@ const CreateOrUpdateProductForm = ({
           values.type === ProductTypeEnum.simple
             ? createSimpleProductSchema
             : values.type === ProductTypeEnum.variable
-            ? createVariableProductSchema
-            : createProductBaseSchema;
+              ? createVariableProductSchema
+              : createProductBaseSchema;
 
         const result = schema.safeParse(values);
 
@@ -650,27 +649,28 @@ const CreateOrUpdateProductForm = ({
                                           label="Title"
                                           placeholder="Enter title"
                                         />
-                                        <Textarea
-                                          className="w-full"
-                                          value={faq.content}
-                                          onChange={(e) => {
-                                            setFieldValue(
-                                              'faqs',
-                                              (values.faqs || []).map(
-                                                (faqItem) => {
-                                                  if (faqItem.id === faq.id) {
-                                                    return {
-                                                      ...faqItem,
-                                                      content: e.target.value,
-                                                    };
+
+                                        <RichTextEditor
+                                          editor={{
+                                            id: `faq-content-${faq.id}`,
+                                            value: faq.content,
+                                            onEditorChange: (value) => {
+                                              setFieldValue(
+                                                'faqs',
+                                                (values.faqs || []).map(
+                                                  (faqItem) => {
+                                                    if (faqItem.id === faq.id) {
+                                                      return {
+                                                        ...faqItem,
+                                                        content: value,
+                                                      };
+                                                    }
+                                                    return faqItem;
                                                   }
-                                                  return faqItem;
-                                                }
-                                              )
-                                            );
+                                                )
+                                              );
+                                            },
                                           }}
-                                          label="Content"
-                                          placeholder="Enter content"
                                         />
                                       </div>
                                     </div>
@@ -757,28 +757,38 @@ const CreateOrUpdateProductForm = ({
                                           label="Label"
                                           placeholder="Enter label"
                                         />
-                                        <Textarea
-                                          className="w-full"
-                                          value={spec.value}
-                                          onChange={(e) => {
-                                            setFieldValue(
-                                              'specs',
-                                              (values.specs || []).map(
-                                                (specItem) => {
-                                                  if (specItem.id === spec.id) {
-                                                    return {
-                                                      ...specItem,
-                                                      value: e.target.value,
-                                                    };
-                                                  }
-                                                  return specItem;
-                                                }
-                                              )
-                                            );
-                                          }}
-                                          label="Value"
-                                          placeholder="Enter value"
-                                        />
+                                        <div>
+                                          <Label
+                                            htmlFor={`spec-value-${spec.id}`}
+                                            className="mb-3 inline-block"
+                                          >
+                                            Value
+                                          </Label>
+                                          <RichTextEditor
+                                            editor={{
+                                              id: `spec-value-${spec.id}`,
+                                              value: spec.value,
+                                              onEditorChange: (value) => {
+                                                setFieldValue(
+                                                  'specs',
+                                                  (values.specs || []).map(
+                                                    (specItem) => {
+                                                      if (
+                                                        specItem.id === spec.id
+                                                      ) {
+                                                        return {
+                                                          ...specItem,
+                                                          value: value,
+                                                        };
+                                                      }
+                                                      return specItem;
+                                                    }
+                                                  )
+                                                );
+                                              },
+                                            }}
+                                          />
+                                        </div>
                                       </div>
                                     </div>
                                   ))

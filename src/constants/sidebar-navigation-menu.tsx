@@ -100,6 +100,14 @@ export const sidebarNavigationMenuItems: SidebarNavigationMenuItem[] = [
         label: 'Products/Lifestyle',
         url: routes.productsPage,
       },
+      {
+        label: 'How It Works',
+        url: routes.howItWorksPage,
+      },
+      {
+        label: 'Login',
+        url: routes.loginPage,
+      },
     ],
   },
 ];

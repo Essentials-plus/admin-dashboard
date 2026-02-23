@@ -28,7 +28,21 @@ adminApiClient.interceptors.response.use(
   },
   function (error) {
     if (error instanceof AxiosError) {
-      if (error.response?.status === 401) {
+      // Handle network/connection errors
+      if (!error.response) {
+        const isNetworkError =
+          error.code === 'ERR_NETWORK' ||
+          error.code === 'ECONNREFUSED' ||
+          error.code === 'ERR_CONNECTION_REFUSED' ||
+          error.message?.includes('ERR_CONNECTION_REFUSED') ||
+          error.message?.includes('Network Error');
+
+        if (isNetworkError) {
+          toast.error(
+            'Unable to connect to the server. Please check your internet connection or try again later.'
+          );
+        }
+      } else if (error.response?.status === 401) {
         removeAccessTokenFromLocalStorage &&
           removeAccessTokenFromLocalStorage();
         toast.error(
