@@ -566,6 +566,16 @@ export const getUpdateMealOrderMutationOptions = () => {
   };
 };
 
+export const getDeleteMealOrderMutationOptions = () => {
+  return {
+    mutationKey: ['delete-meal-order'],
+    mutationFn: ({ id }: { id: string }) =>
+      adminApiClient.delete<ApiResponseSuccessBase<MealOrderSummary>>(
+        `/plan/order/${id}`
+      ),
+  };
+};
+
 export const getCreateIngredientCategoryMutationOptions = () => {
   return {
     mutationKey: ['create-ingredient-category'],

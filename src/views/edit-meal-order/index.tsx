@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 import {
-  getDeleteProductOrderMutationOptions,
+  getDeleteMealOrderMutationOptions,
   getUpdateMealOrderMutationOptions,
 } from '@/api-clients/admin-api-client/mutations';
 import { getMealOrderByIdQueryOptions } from '@/api-clients/admin-api-client/queries';
@@ -69,7 +69,7 @@ export default function EditMealOrder() {
   });
 
   const deleteOrderMutation = useMutation({
-    ...getDeleteProductOrderMutationOptions(),
+    ...getDeleteMealOrderMutationOptions(),
   });
 
   const updateOrderMutation = useMutation({
@@ -206,10 +206,10 @@ export default function EditMealOrder() {
                                 id: order?.id!,
                               }),
                               {
-                                loading: `Deleting order "${order?.id}"`,
-                                success(data) {
+                                loading: `Deleting order..."`,
+                                success() {
                                   router.back();
-                                  return `Order "${data.data.data.id}" deleted.`;
+                                  return `Order deleted successfully.`;
                                 },
                               }
                             );

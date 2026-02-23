@@ -1,13 +1,10 @@
 import { Check, Copy, MoreHorizontal } from 'lucide-react';
 
 import {
-  getDeleteProductOrderMutationOptions,
+  getDeleteMealOrderMutationOptions,
   getRunAutoConfirmOrderMutationOptions,
 } from '@/api-clients/admin-api-client/mutations';
-import {
-  getMealOrdersQueryOptions,
-  getProductOrdersQueryOptions,
-} from '@/api-clients/admin-api-client/queries';
+import { getMealOrdersQueryOptions } from '@/api-clients/admin-api-client/queries';
 import ApiStatusIndicator from '@/components/api-status-indicator';
 import { confirm } from '@/components/confirm';
 import DataTablePagination from '@/components/data-table-pagination';
@@ -74,7 +71,7 @@ const MealOrders = () => {
   );
 
   const deleteOrderMutation = useMutation({
-    ...getDeleteProductOrderMutationOptions(),
+    ...getDeleteMealOrderMutationOptions(),
   });
   const runAutoConfirmOrderMutation = useMutation({
     ...getRunAutoConfirmOrderMutationOptions(),
@@ -218,14 +215,14 @@ const MealOrders = () => {
                                   id: order.id,
                                 }),
                                 {
-                                  loading: `Deleting order "${order.id}"`,
-                                  success(data) {
+                                  loading: `Deleting order...`,
+                                  success() {
                                     queryClient.invalidateQueries({
                                       queryKey: extractQueryKey(
-                                        getProductOrdersQueryOptions
+                                        getMealOrdersQueryOptions
                                       ),
                                     });
-                                    return `Order "${data.data.data.id}" deleted.`;
+                                    return `Order deleted successfully.`;
                                   },
                                 }
                               );
