@@ -74,8 +74,19 @@ export type MealOrder = {
   updatedAt: Date;
   planId: string | null;
   status: PlanOrderStatusEnum;
+  lockdownDate: string | null;
+  deliveryDate: string | null;
 };
-export type MealOrderSummary = Pick<
-  MealOrder,
-  'id' | 'status' | 'week' | 'plan' | 'createdAt' | 'totalAmount'
->;
+// export type MealOrderSummary = Pick<
+//   MealOrder,
+//   | 'id'
+//   | 'status'
+//   | 'week'
+//   | 'plan'
+//   | 'createdAt'
+//   | 'totalAmount'
+//   | 'lockdownDate'
+//   | 'deliveryDate'
+//   | 'mealsForTheWeek'
+// >;
+export type MealOrderSummary = MealOrder;

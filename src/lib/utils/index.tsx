@@ -110,6 +110,9 @@ export const slugifyString = (string: string) => {
 export const appDefaultDateFormatter = (date: Date) => {
   return format(date, "eeee, dd-MM-yyyy 'at' hh:mm a");
 };
+export const appDefaultDateFormatterWithoutTime = (date: Date) => {
+  return format(date, 'eeee, dd-MM-yyyy');
+};
 
 // export const getProductPrice = (
 //   product: Order['products'][number]['product'],

@@ -1,4 +1,10 @@
-import { Check, Copy, MoreHorizontal } from 'lucide-react';
+import {
+  CalendarIcon,
+  Check,
+  Copy,
+  Loader2,
+  MoreHorizontal,
+} from 'lucide-react';
 
 import {
   getDeleteMealOrderMutationOptions,
@@ -10,6 +16,7 @@ import { confirm } from '@/components/confirm';
 import DataTablePagination from '@/components/data-table-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -24,6 +31,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -44,14 +56,19 @@ import useAppClipboard from '@/hooks/useAppClipboard';
 import usePaginatedQuery from '@/hooks/usePaginatedQuery';
 import {
   appDefaultDateFormatter,
+  appDefaultDateFormatterWithoutTime,
   extractQueryKey,
   formatCount,
 } from '@/lib/utils';
+import { generateMealOrderPDF } from '@/lib/utils/generate-meal-order-pdf';
 import { PlanOrderStatusEnum } from '@/types/api-responses/meal-orders';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import JSZip from 'jszip';
 import moment from 'moment';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 const MealOrders = () => {
@@ -60,11 +77,21 @@ const MealOrders = () => {
 
   const router = useRouter();
 
+  const [lockdownDate, setLockdownDate] = useState<Date | undefined>(undefined);
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
+  const [isGeneratingProduction, setIsGeneratingProduction] = useState(false);
+
   const mealOrdersQuery = usePaginatedQuery(({ page }) =>
     getMealOrdersQueryOptions({
       axiosReqConfig: {
         params: {
           page,
+          ...(lockdownDate && {
+            lockdownDate: format(lockdownDate, 'yyyy-MM-dd'),
+          }),
+          ...(deliveryDate && {
+            deliveryDate: format(deliveryDate, 'yyyy-MM-dd'),
+          }),
         },
       },
     })
@@ -89,6 +116,118 @@ const MealOrders = () => {
       }
     },
   });
+
+  const generateProductionList = async () => {
+    try {
+      setIsGeneratingProduction(true);
+      toast.info('Fetching meal orders...', {
+        id: 'generate-production-list',
+      });
+
+      // Fetch all filtered orders (not paginated)
+      const response = await getMealOrdersQueryOptions({
+        axiosReqConfig: {
+          params: {
+            ...(lockdownDate && {
+              lockdownDate: format(lockdownDate, 'yyyy-MM-dd'),
+            }),
+            ...(deliveryDate && {
+              deliveryDate: format(deliveryDate, 'yyyy-MM-dd'),
+            }),
+          },
+        },
+      }).queryFn();
+
+      const orders = response.data;
+
+      if (!orders || orders.length === 0) {
+        toast.warning('No meal orders found with the selected filters.', {
+          id: 'generate-production-list',
+        });
+        return;
+      }
+
+      toast.info(`Generating PDFs for ${orders.length} orders...`, {
+        id: 'generate-production-list',
+      });
+
+      // Create ZIP file
+      const zip = new JSZip();
+
+      // Generate PDF for each order
+      for (let i = 0; i < orders.length; i++) {
+        const order = orders[i];
+        try {
+          const pdfBlob = await generateMealOrderPDF({
+            order,
+            returnBlob: true,
+          });
+
+          // Skip if blob generation failed
+          if (!pdfBlob) {
+            console.error(`Failed to generate PDF blob for order ${order.id}`);
+            continue;
+          }
+
+          // Generate filename: Invoice_ClientName_Week12.pdf
+          const clientName =
+            order.plan?.user?.name && order.plan?.user?.surname
+              ? `${order.plan.user.name}_${order.plan.user.surname}`.replace(
+                  /\s+/g,
+                  '_'
+                )
+              : `Order_${order.id}`;
+          const weekNumber = moment(order.deliveryDate).isoWeek();
+          const filename = `Invoice_${clientName}_Week${weekNumber}.pdf`;
+
+          zip.file(filename, pdfBlob);
+        } catch (error) {
+          console.error(`Failed to generate PDF for order ${order.id}:`, error);
+          toast.error(`Failed to generate PDF for order ${order.id}`, {
+            id: 'generate-production-list',
+          });
+        }
+      }
+
+      toast.info('Creating ZIP file...', {
+        id: 'generate-production-list',
+      });
+
+      // Generate ZIP file
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      // Create filename for ZIP based on filters
+      let zipFilename = 'production-list';
+      if (lockdownDate) {
+        zipFilename += `_lockdown-${format(lockdownDate, 'yyyy-MM-dd')}`;
+      }
+      if (deliveryDate) {
+        zipFilename += `_delivery-${format(deliveryDate, 'yyyy-MM-dd')}`;
+      }
+      zipFilename += '.zip';
+
+      // Trigger download
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = zipFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(
+        `Production list downloaded successfully! (${orders.length} invoices)`
+      );
+    } catch (error) {
+      console.error('Error generating production list:', error);
+      toast.error('Failed to generate production list. Please try again.', {
+        id: 'generate-production-list',
+      });
+    } finally {
+      setIsGeneratingProduction(false);
+    }
+  };
 
   return (
     <div className="grid">
@@ -117,13 +256,94 @@ const MealOrders = () => {
           </div>
         </CardHeader>
         <CardContent className="overflow-hidden">
-          <Table className="min-w-[700px]">
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">
+                Filter by lockdown date
+              </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-[200px] justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 size-4" />
+                    {lockdownDate ? (
+                      format(lockdownDate, 'PPP')
+                    ) : (
+                      <span className="text-muted-foreground">Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={lockdownDate}
+                    onSelect={(date) => {
+                      setLockdownDate(date);
+                      mealOrdersQuery.fetchPage(1);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">
+                Filter by delivery date
+              </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-[200px] justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 size-4" />
+                    {deliveryDate ? (
+                      format(deliveryDate, 'PPP')
+                    ) : (
+                      <span className="text-muted-foreground">Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={deliveryDate}
+                    onSelect={(date) => {
+                      setDeliveryDate(date);
+                      mealOrdersQuery.fetchPage(1);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {(lockdownDate || deliveryDate) && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setLockdownDate(undefined);
+                  setDeliveryDate(undefined);
+                  mealOrdersQuery.fetchPage(1);
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Order</TableHead>
                 <TableHead>Week No</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Confirmation date</TableHead>
+                <TableHead>Lockdown date</TableHead>
+                <TableHead>Delivery date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -173,6 +393,20 @@ const MealOrders = () => {
                   </TableCell>
                   <TableCell>
                     {appDefaultDateFormatter(new Date(order.createdAt))}
+                  </TableCell>
+                  <TableCell>
+                    {order.lockdownDate
+                      ? appDefaultDateFormatterWithoutTime(
+                          new Date(order.lockdownDate)
+                        )
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {order.deliveryDate
+                      ? appDefaultDateFormatterWithoutTime(
+                          new Date(order.deliveryDate)
+                        )
+                      : '—'}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -246,6 +480,24 @@ const MealOrders = () => {
             query={mealOrdersQuery}
           />
           <DataTablePagination query={mealOrdersQuery} />
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              onClick={generateProductionList}
+              disabled={
+                isGeneratingProduction ||
+                mealOrdersQuery.isLoading ||
+                !mealOrdersQuery.data?.data ||
+                mealOrdersQuery.data.data.length === 0
+              }
+              className="gap-2"
+            >
+              {isGeneratingProduction && (
+                <Loader2 className="size-4 animate-spin" />
+              )}
+              Generate Production List
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

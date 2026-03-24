@@ -2,6 +2,7 @@ import {
   Check,
   ChevronLeft,
   Copy,
+  Loader2,
   MoreVertical,
   PrinterIcon,
 } from 'lucide-react';
@@ -44,23 +45,20 @@ import {
   sortMealsByMealType,
   sumOf,
 } from '@/lib/utils';
+import { generateMealOrderPDF } from '@/lib/utils/generate-meal-order-pdf';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Formik } from 'formik';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { Fragment, useMemo, useRef } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
-import { useReactToPrint } from 'react-to-print';
 import { toast } from 'sonner';
 
 export default function EditMealOrder() {
   const router = useRouter();
   const { copy, copied } = useAppClipboard();
 
-  const printContainer = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({
-    content: () => printContainer.current,
-  });
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const id = router.query.id as string;
 
@@ -80,10 +78,6 @@ export default function EditMealOrder() {
   });
 
   const order = mealOrderQuery?.data?.data;
-
-  const initialValues = {
-    status: order?.status,
-  };
 
   const totalAmount = order?.totalAmount || 0;
   const shippingAmount = order?.shippingAmount || 0;
@@ -105,6 +99,36 @@ export default function EditMealOrder() {
       }).toFixed(2),
     [shippingAmount]
   );
+
+  const generatePDF = useCallback(async () => {
+    if (!order) return;
+
+    setIsGeneratingPdf(true);
+    try {
+      await generateMealOrderPDF({ order });
+
+      const clientName = [order.plan?.user.name, order.plan?.user.surname]
+        .filter(Boolean)
+        .join('_')
+        .replace(/\s+/g, '_');
+      const identifier = clientName || `order_${order.id}`;
+      const fileName = `Invoice_${identifier}_Week${order.week}.pdf`.replace(
+        /[^a-zA-Z0-9_.-]/g,
+        '_'
+      );
+
+      toast.success(`PDF saved: ${fileName}`);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }, [order]);
+
+  const initialValues = {
+    status: order?.status,
+  };
 
   if (!mealOrderQuery.data) {
     return <ApiStatusIndicator query={mealOrderQuery} noData={true} />;
@@ -130,7 +154,7 @@ export default function EditMealOrder() {
       {({ isSubmitting, dirty }) => {
         return (
           <>
-            <Card className="overflow-hidden" ref={printContainer}>
+            <Card className="overflow-hidden">
               <CardHeader className="flex flex-row items-start bg-muted/50">
                 <div className="flex gap-4">
                   <Button
@@ -174,14 +198,18 @@ export default function EditMealOrder() {
             </span>
           </Button> */}
                   <Button
-                    onClick={() => {
-                      handlePrint();
-                    }}
+                    onClick={generatePDF}
+                    disabled={isGeneratingPdf}
                     size={'icon'}
                     variant="outline"
                     className="size-8 print:hidden"
+                    title="Download PDF invoice"
                   >
-                    <PrinterIcon className="size-3.5" />
+                    {isGeneratingPdf ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <PrinterIcon className="size-3.5" />
+                    )}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
