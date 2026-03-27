@@ -4,6 +4,7 @@ export enum IngredientUnitTypeEnum {
   ml = 'ml',
   por = 'por',
   pc = 'pc',
+  x = 'x',
 }
 
 export type IngredientUnitType = keyof typeof IngredientUnitTypeEnum;

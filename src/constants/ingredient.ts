@@ -20,4 +20,8 @@ export const ingredientsUnityTypeOptions: {
     label: 'pc',
     value: 'pc',
   },
+  {
+    label: 'x',
+    value: 'x',
+  },
 ];
