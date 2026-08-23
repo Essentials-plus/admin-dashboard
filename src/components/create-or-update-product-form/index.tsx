@@ -560,11 +560,13 @@ const CreateOrUpdateProductForm = ({
                           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <FormikInput
                               type="number"
+                              step="0.01"
                               name="regularPrice"
                               label="Regular price"
                             />
                             <FormikInput
                               type="number"
+                              step="0.01"
                               name="salePrice"
                               label="Sale price"
                             />
@@ -2037,11 +2039,13 @@ const VariationAccordion = ({
                   label="Regular price"
                   name="regularPrice"
                   type="number"
+                  step="0.01"
                 />
                 <FormikInput
                   label="Sale price"
                   name="salePrice"
                   type="number"
+                  step="0.01"
                 />
                 <FormikInput label="Stock" name="stock" type="number" />
                 <FormikInput
